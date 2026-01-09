@@ -63,6 +63,23 @@ function withColor(_R,_G,_B,_A,_Function)
     love.graphics.setColor(r,g,b,a)
 end
 
+---Reflects and angle over a normal angle
+---@param _Angle number
+---@param _Normal number
+---@return number
+---@diagnostic disable-next-line: duplicate-set-field
+function math.reflectAngle(_Angle,_Normal)
+    return _Normal - (_Angle - _Normal) + math.pi
+end
+
+---Gets the dot product of two Angles
+---@param _A1 number
+---@param _A2 number
+---@return number
+function math.angleDotProduct(_A1,_A2)
+    return math.cos(_A1 - _A2)
+end
+
 ---Gets the angle difference of 2 points
 ---@param _X1 number
 ---@param _Y1 number
@@ -84,6 +101,30 @@ function math.getDistance(_X1,_Y1,_X2,_Y2)
     return math.sqrt((_X2-_X1)^2 + (_Y2-_Y1)^2)
 end
 
+---Gets the angle and distance between 2 points
+---@param _X1 number
+---@param _Y1 number
+---@param _X2 number
+---@param _Y2 number
+---@return number angle
+---@return number distance
+function math.getAngleDistance(_X1,_Y1,_X2,_Y2)
+    return math.getAngle(_X1,_Y1,_X2,_Y2), math.getDistance(_X1,_Y1,_X2,_Y2)
+end
+---Interpolates number with linear method
+---@param _A number
+---@param _B number
+---@param _T number
+---@return number
+function math.interpolateLinear(_A,_B,_T)
+    return _A + (_B - _A) * _T
+end
+
+---Interpolates multiple numbers with linear method
+function math.interpolateTwo(_A1,_A2,_B1,_B2,_T)
+    return math.interpolateLinear(_A1,_B1,_T),math.interpolateLinear(_A2,_B2,_T)
+end
+
 collision = {}
 ---Checks if a point is inside a rectangle
 ---@param _X1 number
@@ -93,7 +134,7 @@ collision = {}
 ---@param _W number
 ---@param _H number
 ---@return boolean
-function collision.pointRectangle(_X1,_Y1,_X2,_Y2,_W,_H)
+function collision.pointInRectangle(_X1,_Y1,_X2,_Y2,_W,_H)
     return _X1 > _X2 and _X1 < _X2 + _W and _Y1 > _Y2 and _Y1 < _Y2 + _H
 end
 
@@ -121,7 +162,7 @@ end
 ---@param _Y2 number
 ---@param _R number
 ---@return boolean
-function collision.pointCircle(_X1,_Y1,_X2,_Y2,_R)
+function collision.pointInCircle(_X1,_Y1,_X2,_Y2,_R)
     return math.getDistance(_X1,_Y1,_X2,_Y2) < _R
 end
 
@@ -160,6 +201,15 @@ local function loadAllThings(_Path)
     end
     return loaded
 end
+---Prints things
+function printm(...)
+    local separator = " "
+    local args = {...}
+    local str = table.concat(args,separator)
+    print(str)
+end
+
+
 --LOADING FILES
 
 img = {}

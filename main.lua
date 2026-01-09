@@ -67,6 +67,12 @@ function love.mousemoved(x, y, dx, dy, istouch)
     end
 end
 
+function love.mousereleased(x, y, button, isTouch)
+    if currentGameState.mousereleased then
+        currentGameState.mousereleased(x, y, button, isTouch)
+    end
+end
+
 function love.quit()
     if currentGameState.quit then
         currentGameState.quit()
