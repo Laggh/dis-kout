@@ -1,14 +1,29 @@
 local thisState = {}
 
-local disc = {
-    x = 90,
-    y = 160,
-    angle = 0,
-    speed = 0,
-    isFirstImpact = false,
-}
+local disc = {}
+local objects = {}
+
 local particles = {}
 local touchingScreen = false
+
+function thisState.load()
+    -- Variaveis iniciais
+    objects = {spikes={},coins={},bumpers={}}
+    createBumper(50,50)
+    createBumper(130,80)
+    createBumper(90,200)
+    createBumper(60,250)
+    --createCoin(50,100)
+    --createSpike(20,20)
+    disc = {
+        x = 90,
+        y = 160,
+        angle = 0,
+        speed = 0,
+        isFirstImpact = false,
+    }
+    launchDisc(math.pi/4,0)
+end
 
 function createSingleParticle(_X,_Y,_Dir,_Speed,_Life,_DeathTime)
     local particle = {}
@@ -55,8 +70,8 @@ function drawParticles()
     end
 end
 
-function runDisc(timeScale)
-    timeScale = timeScale or 1
+function runDisc(_TimeScale)
+    local timeScale = _TimeScale or 1
     if disc.angle > math.pi then disc.angle = disc.angle - 2*math.pi end
     if disc.angle < -math.pi then disc.angle = disc.angle + 2*math.pi end
 
@@ -91,7 +106,7 @@ function runDisc(timeScale)
     end
 
 
-    -- Colisões com as bordas
+    --#region Colisões com as paredes
     if disc.x < 16 then -- Esquerd
         disc.x = 16 + 2
         handleImpact(0)
@@ -108,6 +123,48 @@ function runDisc(timeScale)
     if disc.y > 320 - 16 then -- Baixo
         disc.y = 320 - 16 - 2
         handleImpact(-math.pi/2)
+    end 
+    --#endregion
+
+    for i,v in ipairs(objects.coins) do
+        if collision.circleCircle(
+            disc.x,disc.y,16,
+            v.x,v.y,8
+        ) then
+            --table.remove(objects.coins,i)
+            v.x = math.random(16,180-16)
+            v.y = math.random(16,320-16)
+            print("moeda")
+        end
+    end
+
+    for i,v in ipairs(objects.spikes) do
+        if collision.circleCircle(
+            disc.x,disc.y,16,
+            v.x,v.y,8
+        ) then
+            print("spike")
+            changeGameState("menu")
+        end
+    end
+
+    for i,v in ipairs(objects.bumpers) do
+        if collision.circleRectangle(
+            disc.x,disc.y,16,
+            v.x-16,v.y-16,32,32
+        ) then
+            if disc.speed > 10 then --destroir se rapido demais
+                createParticles(20,v.x,v.y,0,2*math.pi,2,15,15) 
+                table.remove(objects.bumpers,i)
+                print("bumper destruido")
+            else
+                v.tSinceLastHit = 0
+                handleImpact(math.getAngle(
+                    v.x,v.y,
+                    disc.x,disc.y
+                ))
+            end
+        end
     end
 
     -- Redução de velocidade
@@ -123,9 +180,43 @@ function launchDisc(_Angle,_Speed)
     disc.x = disc.x + math.cos(disc.angle)*disc.speed*3
     disc.y = disc.y + math.sin(disc.angle)*disc.speed*3
 end
+function createCoin(_X,_Y)
+    local coin = {}
+    coin.x = _X or math.random(16,180-16)
+    coin.y = _Y or math.random(16,320-16)
+    coin.t = 0
+    table.insert(objects.coins,coin)
+end
+function createBumper(_X,_Y)
+    local bumper = {}
+    bumper.x = _X or math.random(16,180-16)
+    bumper.y = _Y or math.random(16,320-16)
+    bumper.t = 0
+    bumper.tSinceLastHit = 0
+    table.insert(objects.bumpers,bumper)
+end
+function createSpike(_X,_Y)
+    local spike = {}
+    spike.x = _X or math.random(16,180-16)
+    spike.y = _Y or math.random(16,320-16)
+    spike.t = 0
+    table.insert(objects.spikes,spike)
+end
 
-function thisState.load()
-    launchDisc(math.pi/4,0)
+function runObjects(_TimeScale)
+    local timeScale = _TimeScale or 1
+    
+    for i,v in ipairs(objects.coins) do
+        v.t = v.t + 1*timeScale
+    end
+    for i,v in ipairs(objects.bumpers) do
+        v.t = v.t + 1*timeScale
+        v.tSinceLastHit = v.tSinceLastHit + 1*timeScale
+    end
+    for i,v in ipairs(objects.spikes) do
+        v.t = v.t + 1*timeScale
+    end
+
 end
 
 function thisState.update(_Dt)
@@ -136,6 +227,7 @@ function thisState.update(_Dt)
         timeScale = 1
     end
 
+    runObjects(timeScale)
     runParticles(timeScale)
     runDisc(timeScale)
 end
@@ -180,6 +272,49 @@ function drawDiscLine()
         love.graphics.rectangle("fill",x,y,size,size)
     end
 end
+function drawCoin(_Coin)
+    local x = _Coin.x
+    local y = _Coin.y
+    local r = 0
+    local sx,sy = 2,2
+    withColor(1,1,0,1, function()
+        drawCentered(img.coin,x,y,r,sx,sy) 
+    end)
+end
+function drawBumper(_Bumper)
+    local x = _Bumper.x
+    local y = _Bumper.y
+    local r = 0
+    local scale = 1
+    if _Bumper.tSinceLastHit < 1 then
+        scale = 0.9 + (_Bumper.tSinceLastHit*0.15)
+    end
+    local sx,sy = scale*2,scale*2
+    withColor(1,1,1,1, function()
+        drawCentered(img.bumper,x,y,r,sx,sy) 
+    end)
+end
+
+function drawSpike(_Spike)
+    local x = _Spike.x
+    local y = _Spike.y
+    local r = 0
+    local sx,sy = 2,2
+    withColor(1,0,0,1, function()
+        drawCentered(img.spike,x,y,r,sx,sy) 
+    end)
+end
+function drawObjetcts()
+    local function _drawTableWithFunction(_Tab,_Func)
+        for i,v in ipairs(_Tab) do
+            _Func(v)
+        end
+    end
+
+    _drawTableWithFunction(objects.coins,drawCoin)
+    _drawTableWithFunction(objects.bumpers,drawBumper)
+    _drawTableWithFunction(objects.spikes,drawSpike)
+end
 function thisState.draw()
     screenLib.setScreen(180,320)
     love.graphics.rectangle("line",0,0,180,320)
@@ -190,25 +325,24 @@ function thisState.draw()
         drawDiscLine()
     end
     drawDisc()
+    drawObjetcts()
 
-    local speed,x,y,angle = disc.speed, disc.x, disc.y, disc.angle
-    local touching = touchingScreen
+
+    -- mostra info do bumper[1]
     local f = string.format
-    local infoText = string.interpolate(
-        "Speed: ${speed}\nX: ${x}\nY: ${y}\nAngle: ${angle}\n${touchingText}",
-        {
-            speed = f("%.2f",speed),
-            x = f("%.2f",x),
-            y = f("%.2f",y),
-            angle = f("%.2f",angle),
-            touchingText = touching and "Touching Screen" or "Not Touching Screen",
-        }
-    )
+    infoText = disc.speed
+
+
+
+
     love.graphics.printf(infoText, 10, 10, 160, "left")
 end
 
 
 function thisState.mousepressed()
+
+    --createParticles(100,50,50,0,2*math.pi,2,15,15)
+
 
     local x,y = screenLib.getMousePosition()
 
@@ -232,13 +366,16 @@ function thisState.mousereleased()
     )
 
     if dist > 50 then
-        local launchSpeed = setLimits(dist/10, 5, 20)
+        print(dist/10)
+        local launchSpeed = setLimits(dist/10, 5, 12)
         launchDisc(angle,launchSpeed)
     end
     touchingScreen = false
     
 
 end
+
+
 
 
 

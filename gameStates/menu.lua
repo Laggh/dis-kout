@@ -12,7 +12,7 @@ function thisState.draw()
     love.graphics.print("Menu",200,200)
 end
 
-function thisState.mousePressed()
+function thisState.mousepressed()
     changeGameState("game")
 end
 
