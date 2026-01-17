@@ -177,6 +177,22 @@ end
 function collision.circleCircle(_X1,_Y1,_R1,_X2,_Y2,_R2)
     return math.getDistance(_X1,_Y1,_X2,_Y2) < _R1 + _R2
 end
+
+---Checks if a circle is intersecting a rectangle
+---@param _CX number
+---@param _CY number
+---@param _CR number
+---@param _RX number
+---@param _RY number
+---@param _RW number
+---@param _RH number
+---@return boolean
+function collision.circleRectangle(_CX,_CY,_CR,_RX,_RY,_RW,_RH)
+    local closestX = setLimits(_CX, _RX, _RX + _RW)
+    local closestY = setLimits(_CY, _RY, _RY + _RH)
+    return collision.pointInCircle(closestX, closestY, _CX, _CY, _CR)
+end
+
 local function loadAllThings(_Path)
     local loaded = {}
     for i,v in pairs(love.filesystem.getDirectoryItems(_Path)) do
